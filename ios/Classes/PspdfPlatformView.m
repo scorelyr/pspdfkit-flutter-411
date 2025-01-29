@@ -15,7 +15,7 @@
 @import PSPDFKit;
 @import PSPDFKitUI;
 
-@interface PspdfPlatformView() <PSPDFViewControllerDelegate>
+@interface PspdfPlatformView() <PSPDFViewControllerDelegate, PSPDFFlexibleToolbarDelegate>
 @property int64_t platformViewId;
 @property (nonatomic) FlutterMethodChannel *channel;
 @property (nonatomic) FlutterMethodChannel *broadcastChannel;
@@ -34,7 +34,7 @@
 }
 
 - (instancetype)initWithFrame:(CGRect)frame viewIdentifier:(int64_t)viewId arguments:(id)args messenger:(NSObject<FlutterBinaryMessenger> *)messenger {
-    
+
     if ((self = [super init])) {
         _channel = [FlutterMethodChannel methodChannelWithName:[NSString stringWithFormat:@"com.pspdfkit.widget.%lld", viewId] binaryMessenger:messenger];
         _broadcastChannel = [FlutterMethodChannel methodChannelWithName:@"com.pspdfkit.global" binaryMessenger:messenger];
@@ -44,7 +44,7 @@
         _navigationController.view.frame = frame;
         _platformViewImpl = [[PspdfkitPlatformViewImpl alloc] init];
         [_platformViewImpl registerWithBinaryMessenger:messenger viewId:[NSString stringWithFormat:@"%lld",viewId]];
-        
+
         // View controller containment
         _flutterViewController = [UIApplication sharedApplication].delegate.window.rootViewController;
         if (_flutterViewController == nil) {
@@ -59,12 +59,12 @@
             NSLog(@"Warning: 'document' argument is not a string. Showing an empty view in default configuration.");
             _pdfViewController = [[PSPDFViewController alloc] init];
         } else {
-           
+
             NSDictionary *configurationDictionary = [PspdfkitFlutterConverter processConfigurationOptionsDictionaryForPrefix:args[@"configuration"]];
             PSPDFDocument *document = [PspdfkitFlutterHelper documentFromPath:documentPath];
-            
+
             NSArray *measurementValueConfigurations = configurationDictionary[@"measurementValueConfigurations"];
-          
+
             [PspdfkitFlutterHelper unlockWithPasswordIfNeeded:document dictionary:configurationDictionary];
 
             BOOL isImageDocument = [PspdfkitFlutterHelper isImageDocument:documentPath];
@@ -73,7 +73,8 @@
             _pdfViewController.appearanceModeManager.appearanceMode = [PspdfkitFlutterConverter appearanceMode:configurationDictionary];
             _pdfViewController.pageIndex = [PspdfkitFlutterConverter pageIndex:configurationDictionary];
             _pdfViewController.delegate = self;
-            
+            _pdfViewController.annotationToolbarController.toolbar.toolbarDelegate = self;
+
             [NSNotificationCenter.defaultCenter addObserver:self selector:@selector(documentDidFinishRendering) name:PSPDFDocumentViewControllerDidConfigureSpreadViewNotification object:nil];
 
             if ((id)configurationDictionary != NSNull.null) {
@@ -93,9 +94,9 @@
                 if (configurationDictionary[key]) {
                     [PspdfkitFlutterHelper setToolbarTitle:configurationDictionary[key] forViewController:_pdfViewController];
                 }
-                
+
                 NSArray *annotationToolbarGroupingitems = configurationDictionary[@"toolbarItemGrouping"];
-                
+
                 if (annotationToolbarGroupingitems){
                     PSPDFAnnotationToolbarConfiguration *configuration = [AnnotationToolbarItemsGrouping convertAnnotationToolbarConfigurationWithToolbarItems:annotationToolbarGroupingitems];
                     _pdfViewController.annotationToolbarController.annotationToolbar.configurations = @[configuration];
@@ -116,9 +117,9 @@
         [_navigationController setViewControllers:@[_pdfViewController] animated:NO];
 
         __weak id weakSelf = self;
-        
+
         [_platformViewImpl setViewControllerWithController:_pdfViewController];
-        
+
         [_channel setMethodCallHandler:^(FlutterMethodCall * _Nonnull call, FlutterResult  _Nonnull result) {
             [weakSelf handleMethodCall:call result:result];
         }];
@@ -129,7 +130,7 @@
 
 - (void)documentDidFinishRendering {
     // Remove observer after the initial notification
-    [NSNotificationCenter.defaultCenter removeObserver:self 
+    [NSNotificationCenter.defaultCenter removeObserver:self
                                                   name:PSPDFDocumentViewControllerDidConfigureSpreadViewNotification
                                                 object:nil];
     NSString *documentId = self.pdfViewController.document.UID;
@@ -178,6 +179,13 @@
 - (void)pdfViewControllerDidDismiss:(PSPDFViewController *)pdfController {
     // Don't hold on to the view controller object after dismissal.
     [self cleanup];
+}
+
+# pragma mark - PSPDFFlexibleToolbarDelegate
+
+- (void)flexibleToolbarDidHide:(PSPDFFlexibleToolbar *)toolbar {
+    // Handle annotation toolbar being hidden.
+    [_channel invokeMethod:@"onExitAnnotationCreationMode" arguments: nil];
 }
 
 @end

@@ -8,6 +8,7 @@
 ///
 
 import 'package:flutter/services.dart';
+
 import '../../pspdfkit.dart';
 import '../document/pdf_document_native.dart';
 
@@ -17,10 +18,13 @@ import '../document/pdf_document_native.dart';
 class PspdfkitWidgetControllerNative extends PspdfkitWidgetController {
   final MethodChannel _channel;
 
-  PspdfkitWidgetControllerNative(this._channel,
-      {PdfDocumentLoadedCallback? onPdfDocumentLoaded,
-      PdfDocumentLoadFailedCallback? onPdfDocumentLoadFailed,
-      PageChangedCallback? onPageChanged}) {
+  PspdfkitWidgetControllerNative(
+    this._channel, {
+    PdfDocumentLoadedCallback? onPdfDocumentLoaded,
+    PdfDocumentLoadFailedCallback? onPdfDocumentLoadFailed,
+    PageChangedCallback? onPageChanged,
+    VoidCallback? onExitAnnotationCreationMode,
+  }) {
     _channel.setMethodCallHandler((call) async {
       switch (call.method) {
         case 'onDocumentLoaded':
@@ -37,6 +41,9 @@ class PspdfkitWidgetControllerNative extends PspdfkitWidgetController {
         case 'onPageChanged':
           var pageIndex = call.arguments['pageIndex'];
           onPageChanged?.call(pageIndex);
+          break;
+        case 'onExitAnnotationCreationMode':
+          onExitAnnotationCreationMode?.call();
           break;
       }
     });
@@ -178,5 +185,28 @@ class PspdfkitWidgetControllerNative extends PspdfkitWidgetController {
     }).catchError((error) {
       throw Exception('Error getting zoom scale: $error');
     });
+  }
+
+  @override
+  Future<bool?> jumpToPage(int pageIndex) async {
+    final result = await _channel.invokeMethod('jumpToPage', <String, int>{
+      'pageIndex': pageIndex,
+    });
+    return result;
+  }
+
+  @override
+  Future<bool?> isShowingTwoPages() async {
+    final result = await _channel.invokeMethod('isShowingTwoPages');
+    return result;
+  }
+
+  @override
+  Future<bool?> enterAnnotationCreationMode(String authorName) async {
+    final result = await _channel
+        .invokeMethod('enterAnnotationCreationMode', <String, String>{
+      'authorName': authorName,
+    });
+    return result;
   }
 }

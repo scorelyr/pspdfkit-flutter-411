@@ -9,13 +9,15 @@
 library pspdfkit_widget;
 
 import 'dart:async';
-import 'package:flutter/services.dart';
+
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:pspdfkit_flutter/pspdfkit.dart';
+
 import 'pspdfkit_flutter_widget_controller_impl.dart';
 import 'pspdfkit_widget_controller_native.dart';
 
@@ -28,6 +30,8 @@ class PspdfkitWidget extends StatefulWidget {
   final PageChangedCallback? onPageChanged;
   final PageClickedCallback? onPageClicked;
   final PdfDocumentSavedCallback? onPdfDocumentSaved;
+  final VoidCallback? onExitAnnotationCreationMode;
+
   const PspdfkitWidget({
     Key? key,
     required this.documentPath,
@@ -38,6 +42,7 @@ class PspdfkitWidget extends StatefulWidget {
     this.onPageChanged,
     this.onPageClicked,
     this.onPdfDocumentSaved,
+    this.onExitAnnotationCreationMode,
   }) : super(key: key);
 
   @override
@@ -133,6 +138,7 @@ class _PspdfkitWidgetState extends State<PspdfkitWidget> {
             onPageChanged: widget.onPageChanged,
             onPdfDocumentLoadFailed: widget.onPdfDocumentError,
             onPdfDocumentLoaded: widget.onPdfDocumentLoaded,
+            onExitAnnotationCreationMode: widget.onExitAnnotationCreationMode,
           )
         : PspdfkitFlutterWidgetControllerImpl(
             api,
@@ -141,6 +147,7 @@ class _PspdfkitWidgetState extends State<PspdfkitWidget> {
             onPdfDocumentLoaded: widget.onPdfDocumentLoaded,
             onPageClicked: widget.onPageClicked,
             onPdfDocumentSaved: widget.onPdfDocumentSaved,
+            onExitAnnotationCreationMode: widget.onExitAnnotationCreationMode,
           );
     widget.onPspdfkitWidgetCreated?.call(controller);
     if (controller is PspdfkitFlutterWidgetControllerImpl) {
@@ -155,10 +162,14 @@ class _PspdfkitWidgetState extends State<PspdfkitWidget> {
 
   @override
   void dispose() {
-    PspdfkitWidgetCallbacks.setUp(null,
-        messageChannelSuffix: 'widget.callbacks.$_id');
-    NutrientEventsCallbacks.setUp(null,
-        messageChannelSuffix: 'events.callbacks.$_id');
+    try {
+      PspdfkitWidgetCallbacks.setUp(null,
+          messageChannelSuffix: 'widget.callbacks.$_id');
+      NutrientEventsCallbacks.setUp(null,
+          messageChannelSuffix: 'events.callbacks.$_id');
+    } catch (e) {
+      debugPrint(e.toString());
+    }
     super.dispose();
   }
 }

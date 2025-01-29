@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:pspdfkit_flutter/pspdfkit.dart';
+
 import '../document/pdf_document_native.dart';
 
 class PspdfkitFlutterWidgetControllerImpl
@@ -16,6 +17,7 @@ class PspdfkitFlutterWidgetControllerImpl
   final PdfDocumentSavedCallback? onPdfDocumentSaved;
   final PageClickedCallback? onPageClicked;
   final Map<NutrientEvent, Function(dynamic eventData)> _eventListeners = {};
+  final VoidCallback? onExitAnnotationCreationMode;
 
   PspdfkitFlutterWidgetControllerImpl(
     this._pspdfkitWidgetControllerApi, {
@@ -24,6 +26,7 @@ class PspdfkitFlutterWidgetControllerImpl
     this.onPdfPageChanged,
     this.onPdfDocumentSaved,
     this.onPageClicked,
+    this.onExitAnnotationCreationMode,
   });
 
   @override
@@ -171,5 +174,23 @@ class PspdfkitFlutterWidgetControllerImpl
   @override
   void onDocumentSaved(String documentId, String? path) {
     onPdfDocumentSaved?.call(documentId, path);
+  }
+
+  @override
+  Future<bool?> jumpToPage(int pageIndex) async {
+    throw UnimplementedError(
+        'This method id not supported with the new Pigeon API!');
+  }
+
+  @override
+  Future<bool?> isShowingTwoPages() async {
+    throw UnimplementedError(
+        'This method id not supported with the new Pigeon API!');
+  }
+
+  @override
+  Future<bool?> enterAnnotationCreationMode(String authorName) async {
+    throw UnimplementedError(
+        'This method id not supported with the new Pigeon API!');
   }
 }

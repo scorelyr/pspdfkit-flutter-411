@@ -112,11 +112,11 @@
         NSArray<NSDictionary<NSString *,NSObject *> *> *pages = call.arguments[@"pages"];
         NSURL *processedDocumentURL = [PspdfkitFlutterHelper writableFileURLWithPath:outputPath override:YES copyIfNeeded:NO];
         [PspdfkitPdfGenerator generatePdfWithPages:pages outputUrl:processedDocumentURL results:result];
-        
+
     } else if ([@"setDelayForSyncingLocalChanges" isEqualToString:call.method]){
-          
+
         NSNumber *delay = call.arguments[@"delay"];
-        
+
           if (delay == nil || [delay doubleValue] < 0) {
             result([FlutterError errorWithCode:@"InvalidArgument"
             message:@"Delay must be a positive number"
@@ -134,10 +134,10 @@
             message:@"Delay can only be set for Instant documents"
             details:nil]);
         }
-        
+
      } else if ([@"setListenToServerChanges" isEqualToString:call.method]){
          BOOL listenToServerChanges = [call.arguments[@"listen"] boolValue];
-        
+
         if ([pdfViewController isKindOfClass:[InstantDocumentViewController class]]) {
             InstantDocumentViewController *instantDocumentViewController = (InstantDocumentViewController *)pdfViewController;
             instantDocumentViewController.shouldListenForServerChangesWhenVisible = listenToServerChanges;
@@ -187,7 +187,7 @@
         } @catch (NSException *exception) {
             result([FlutterError errorWithCode:@"" message:exception.reason details:nil]);
         }
-        
+
     } else if ([@"getFormFields" isEqualToString:call.method]) {
         NSArray<PSPDFFormElement *> *formFields = pdfViewController.document.formParser.forms;
         NSArray<NSDictionary *>  *formFieldsJson = [FormHelper convertFormFieldsWithFormFields:formFields];
@@ -200,7 +200,7 @@
             @"width": @(visibleRect.size.width),
             @"height": @(visibleRect.size.height)
         };
-        result(visibleRectDictionary);        
+        result(visibleRectDictionary);
     } else if ([@"zoomToRect" isEqualToString:call.method]) {
         NSInteger pageIndex = [call.arguments[@"pageIndex"] integerValue];
         NSDictionary *rect = call.arguments[@"rect"];
@@ -209,7 +209,41 @@
         result(nil);
     } else if ([@"getZoomScale" isEqualToString:call.method]) {
         result(FlutterMethodNotImplemented);
-    }else {
+    } else if ([@"jumpToPage" isEqualToString:call.method]) {
+          @try {
+              PSPDFPageIndex pageIndex = [call.arguments[@"pageIndex"] longLongValue];
+              [pdfViewController setPageIndex:pageIndex animated:YES];
+              result(@(YES));
+          } @catch (NSException *exception) {
+              result([FlutterError errorWithCode:@"IllegalPage" message:exception.reason details:nil]);
+          }
+      } else if ([@"isShowingTwoPages" isEqualToString:call.method]) {
+          BOOL showingTwoPages = pdfViewController.documentViewController.layout.spreadMode != PSPDFDocumentViewLayoutSpreadModeSingle;
+              result(@(showingTwoPages));
+      } else if([@"enterAnnotationCreationMode" isEqualToString:call.method]){
+          @try {
+              NSString *authorName = call.arguments[@"authorName"];
+              PSPDFUsernameHelper.defaultAnnotationUsername = authorName;
+
+              PSPDFDocument *document = pdfViewController.document;
+              if (!document || !document.isValid) {
+                  result([FlutterError errorWithCode:@"" message:@"PDF document not found or is invalid." details:nil]);
+                  return;
+              }
+              document.defaultAnnotationUsername = authorName;
+
+              [pdfViewController.annotationToolbarController updateHostView:nil container:nil viewController:pdfViewController];
+
+              [pdfViewController.annotationToolbarController showToolbarAnimated:YES completion:^(BOOL finished) {
+                  if (finished) {
+                      [pdfViewController.annotationStateManager setState:PSPDFAnnotationStringInk variant:PSPDFAnnotationVariantStringInkPen];
+                  }
+              }];
+              result(@(YES));
+          } @catch (NSException *exception) {
+              result([FlutterError errorWithCode:@"" message:exception.reason details:nil]);
+          }
+      } else {
         result(FlutterMethodNotImplemented);
     }
 }
@@ -224,7 +258,7 @@
     } else {
         url = [NSBundle.mainBundle URLForResource:path withExtension:nil];
     }
-    
+
     if (url == nil) {
         return nil;
     }

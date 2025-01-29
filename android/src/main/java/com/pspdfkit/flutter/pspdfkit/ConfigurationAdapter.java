@@ -78,6 +78,7 @@ class ConfigurationAdapter {
     private static final String ENABLE_DOCUMENT_EDITOR = "enableDocumentEditor";
     private static final String DARK_THEME_RESOURCE = "darkThemeResource";
     private static final String DEFAULT_THEME_RESOURCE = "defaultThemeResource";
+    private static final String RESTORE_LAST_VIEWED_PAGE = "restoreLastViewedPage";
 
     // Thumbnail Options
     private static final String SHOW_THUMBNAIL_BAR = "showThumbnailBar";
@@ -401,9 +402,17 @@ class ConfigurationAdapter {
                 double value = (double) configurationMap.get(key);
                 configuration.startZoomScale((float) value);
             }
+
+            key = getKeyOfType(configurationMap, RESTORE_LAST_VIEWED_PAGE, Boolean.class);
+            if (key != null) {
+                configureRestoreLastViewedPage((Boolean) configurationMap.get(key));
+            }
         }
     }
 
+    private void configureRestoreLastViewedPage(boolean restoreLastViewedPage) {
+        configuration.restoreLastViewedPage(restoreLastViewedPage);
+    }
 
     private void configurePageTransition(@NonNull final String transition) {
         switch (transition) {
