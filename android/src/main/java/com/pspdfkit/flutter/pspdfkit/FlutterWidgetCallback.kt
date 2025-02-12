@@ -16,11 +16,13 @@ import com.pspdfkit.document.DocumentSaveOptions
 import com.pspdfkit.document.PdfDocument
 import com.pspdfkit.flutter.pspdfkit.api.PspdfkitWidgetCallbacks
 import com.pspdfkit.listeners.DocumentListener
-
+import com.pspdfkit.annotations.AnnotationProvider
+import com.pspdfkit.ui.special_mode.controller.AnnotationCreationController
+import com.pspdfkit.ui.special_mode.manager.AnnotationManager
 
 class FlutterWidgetCallback(
     private var pspdfkitWidgetCallbacks: PspdfkitWidgetCallbacks? = null
-) : DocumentListener {
+) : DocumentListener, AnnotationManager.OnAnnotationCreationModeChangeListener {
 
     override fun onDocumentLoaded(document: PdfDocument) {
         pspdfkitWidgetCallbacks?.onDocumentLoaded(document.uid) {}
@@ -70,5 +72,15 @@ class FlutterWidgetCallback(
             document.documentSource.fileUri?.path
         ) {}
         return true
+    }
+
+    override fun onEnterAnnotationCreationMode(annotationCreationController: AnnotationCreationController) {
+    }
+
+    override fun onChangeAnnotationCreationMode(annotationCreationController: AnnotationCreationController) {
+    }
+
+    override fun onExitAnnotationCreationMode(annotationCreationController: AnnotationCreationController) {
+        pspdfkitWidgetCallbacks?.onAnnotationCreationModeExited() {}
     }
 }

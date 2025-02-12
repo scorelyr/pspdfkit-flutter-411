@@ -42,6 +42,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.nio.charset.StandardCharsets
 import java.util.Locale
+import com.pspdfkit.preferences.PSPDFKitPreferences
+import com.pspdfkit.ui.special_mode.controller.AnnotationTool
+import com.pspdfkit.ui.special_mode.controller.AnnotationToolVariant
 
 class PspdfkitViewImpl : PspdfkitWidgetControllerApi {
     private var pdfUiFragment: PdfUiFragment? = null
@@ -631,5 +634,44 @@ class PspdfkitViewImpl : PspdfkitWidgetControllerApi {
 
     override fun removeEventListener(event: NutrientEvent) {
         eventDispatcher?.removeEventListener(pdfUiFragment!!, event)
+    }
+
+    override fun enterAnnotationCreationMode(authorName: String, callback: (Result<Boolean?>) -> Unit) {
+        PSPDFKitPreferences.get(pdfUiFragment!!.requireContext()).setAnnotationCreator(authorName)
+        pdfUiFragment?.pdfFragment?.enterAnnotationCreationMode(AnnotationTool.INK, AnnotationToolVariant.fromPreset(AnnotationToolVariant.Preset.PEN))
+        callback(Result.success(true))
+    }
+
+    override fun jumpToPage(pageIndex: Long, callback: (Result<Boolean>) -> Unit) {
+        try {
+            val document = pdfUiFragment?.document ?: return
+            if(pageIndex < document!!.pageCount) {
+                pdfUiFragment?.pageIndex = pageIndex.toInt()
+                callback(Result.success(true))
+            } else {
+                callback(
+                    Result.failure(
+                        PspdfkitApiError(
+                            "InvalidPage",
+                            "Page index is out of bounds: $pageIndex/${document.pageCount}"
+                        )
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            callback(
+                Result.failure(
+                    PspdfkitApiError(
+                        "IllegalPage",
+                        e.message
+                    )
+                )
+            )
+        }
+    }
+
+    override fun isShowingTwoPages(callback: (Result<Boolean>) -> Unit) {
+        val pageIndex = pdfUiFragment?.pdfFragment?.pageIndex ?: -1
+        callback(Result.success(pdfUiFragment?.pdfFragment?.getSiblingPageIndex(pageIndex) != -1))
     }
 }

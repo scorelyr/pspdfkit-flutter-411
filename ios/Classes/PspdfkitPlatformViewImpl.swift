@@ -10,8 +10,7 @@
 import Foundation
 
 @objc(PspdfkitPlatformViewImpl)
-public class PspdfkitPlatformViewImpl: NSObject, PspdfkitWidgetControllerApi, PDFViewControllerDelegate {
-    
+public class PspdfkitPlatformViewImpl: NSObject, PspdfkitWidgetControllerApi, PDFViewControllerDelegate, FlexibleToolbarDelegate {
     private var pdfViewController: PDFViewController? = nil;
     private var pspdfkitWidgetCallbacks: PspdfkitWidgetCallbacks? = nil;
     private var viewId: String? = nil;
@@ -20,6 +19,12 @@ public class PspdfkitPlatformViewImpl: NSObject, PspdfkitWidgetControllerApi, PD
     @objc public func setViewController(controller: PDFViewController){
         self.pdfViewController = controller
         self.pdfViewController?.delegate = self
+        self.pdfViewController?.annotationToolbarController?.toolbar.toolbarDelegate = self
+    }
+    
+    public func flexibleToolbarWillHide(_ toolbar: FlexibleToolbar) {
+        // Example: Notify the Flutter side or perform cleanup
+        pspdfkitWidgetCallbacks?.onAnnotationCreationModeExited(completion: { _ in })
     }
     
     public func pdfViewController(_ pdfController: PDFViewController, didChange document: Document?) {
@@ -269,6 +274,77 @@ public class PspdfkitPlatformViewImpl: NSObject, PspdfkitWidgetControllerApi, PD
     
     func removeEventListener(event: NutrientEvent) throws {
         eventsHelper?.removeEventListener(event: event)
+    }
+    
+    func enterAnnotationCreationMode(authorName: String, completion: @escaping (Result<Bool?, any Error>) -> Void) {
+        /*
+         @try {
+             NSString *authorName = call.arguments[@"authorName"];
+             PSPDFUsernameHelper.defaultAnnotationUsername = authorName;
+
+             PSPDFDocument *document = pdfViewController.document;
+             if (!document || !document.isValid) {
+                 result([FlutterError errorWithCode:@"" message:@"PDF document not found or is invalid." details:nil]);
+                 return;
+             }
+             document.defaultAnnotationUsername = authorName;
+
+             [pdfViewController.annotationToolbarController updateHostView:nil container:nil viewController:pdfViewController];
+
+             [pdfViewController.annotationToolbarController showToolbarAnimated:YES completion:^(BOOL finished) {
+                 if (finished) {
+                     [pdfViewController.annotationStateManager setState:PSPDFAnnotationStringInk variant:PSPDFAnnotationVariantStringInkPen];
+                 }
+             }];
+             result(@(YES));
+         } @catch (NSException *exception) {
+             result([FlutterError errorWithCode:@"" message:exception.reason details:nil]);
+         }
+         */
+        
+        UsernameHelper.defaultAnnotationUsername = authorName
+        guard let document = pdfViewController?.document, document.isValid else {
+            completion(.failure(PspdfkitApiError(code: "", message: "PDF document not found or is invalid.", details: nil)))
+            return
+        }
+        document.defaultAnnotationUsername = authorName
+        pdfViewController?.annotationToolbarController?.updateHostView(nil, container: nil, viewController: pdfViewController)
+        pdfViewController?.annotationToolbarController?.showToolbar(animated: true) { [self] finished in
+            if finished {
+                pdfViewController?.annotationStateManager.setState(Annotation.Tool.ink, variant: Annotation.Variant.inkPen)
+            }
+        }
+        completion(.success(true))
+    }
+    
+    func jumpToPage(pageIndex: Int64, completion: @escaping (Result<Bool, any Error>) -> Void) {
+        guard let document = pdfViewController?.document, document.isValid else {
+           completion(.failure(PspdfkitApiError(code: "", message: "PDF document not found or is invalid.", details: nil)))
+            return
+        }
+        if(pageIndex < document.pageCount) {
+            pdfViewController?.setPageIndex(PageIndex(pageIndex), animated: false)
+            completion(.success(true))
+        } else {
+            completion(.failure(PspdfkitApiError(code: "", message: "Page index out of bounds: \(pageIndex)/\(document.pageCount)", details: nil)))
+        }
+        
+        /* @try {
+            PSPDFPageIndex pageIndex = [call.arguments[@"pageIndex"] longLongValue];
+            [pdfViewController setPageIndex:pageIndex animated:YES];
+            result(@(YES));
+        } @catch (NSException *exception) {
+            result([FlutterError errorWithCode:@"IllegalPage" message:exception.reason details:nil]);
+        }*/
+    }
+    
+    func isShowingTwoPages(completion: @escaping (Result<Bool, any Error>) -> Void) {
+        /*
+         BOOL showingTwoPages = pdfViewController.documentViewController.layout.spreadMode != PSPDFDocumentViewLayoutSpreadModeSingle;
+             result(@(showingTwoPages));
+         */
+        let showingTwoPages = pdfViewController?.documentViewController?.layout.spreadMode != .single
+        completion(.success(showingTwoPages))
     }
     
     @objc func spreadIndexDidChange(_ notification: Notification) {

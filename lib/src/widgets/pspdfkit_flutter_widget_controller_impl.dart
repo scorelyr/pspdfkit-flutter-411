@@ -178,19 +178,21 @@ class PspdfkitFlutterWidgetControllerImpl
 
   @override
   Future<bool?> jumpToPage(int pageIndex) async {
-    throw UnimplementedError(
-        'This method id not supported with the new Pigeon API!');
+    return _pspdfkitWidgetControllerApi.jumpToPage(pageIndex);
   }
 
   @override
   Future<bool?> isShowingTwoPages() async {
-    throw UnimplementedError(
-        'This method id not supported with the new Pigeon API!');
+    return _pspdfkitWidgetControllerApi.isShowingTwoPages();
   }
 
   @override
   Future<bool?> enterAnnotationCreationMode(String authorName) async {
-    throw UnimplementedError(
-        'This method id not supported with the new Pigeon API!');
+    return _pspdfkitWidgetControllerApi.enterAnnotationCreationMode(authorName);
+  }
+
+  @override
+  void onAnnotationCreationModeExited() {
+    onExitAnnotationCreationMode?.call();
   }
 }

@@ -542,6 +542,22 @@ abstract class PspdfkitWidgetControllerApi {
   void addEventListener(NutrientEvent event);
 
   void removeEventListener(NutrientEvent event);
+
+  /// Programmatically enters annotation creation mode.
+  /// [authorName] The name of the author for the annotation.
+  @async
+  bool? enterAnnotationCreationMode(String authorName);
+
+  /// Programmatically jumps to the given page.
+  /// pageIndex The index of the page to jump to. This is a zero-based index.
+  /// Returns a [Future] that completes with true if the jump was successful, false otherwise.
+  @async
+  bool jumpToPage(int pageIndex);
+
+  /// Determines if the document is currently showing two pages or not. Useful when setting the initial page layout to auto
+  /// Returns a [Future] that completes with true if the document is showing two pages, false otherwise.
+  @async
+  bool isShowingTwoPages();
 }
 
 @HostApi()
@@ -625,6 +641,8 @@ abstract class PspdfkitWidgetCallbacks {
       String documentId, int pageIndex, PointF? point, Object? annotation);
 
   void onDocumentSaved(String documentId, String? path);
+
+  void onAnnotationCreationModeExited();
 }
 
 @FlutterApi()

@@ -150,5 +150,6 @@ class FlutterPdfUiFragmentCallbacks(
 
     override fun onExitAnnotationCreationMode(annotationCreationController: AnnotationCreationController) {
         methodChannel.invokeMethod("onExitAnnotationCreationMode", null)
+        flutterWidgetCallback.onExitAnnotationCreationMode(annotationCreationController)
     }
 }
